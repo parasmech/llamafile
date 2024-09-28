@@ -1,8 +1,11 @@
 // -*- mode:c++;indent-tabs-mode:nil;c-basic-offset:4;tab-width:8;coding:utf-8 -*-
 // vi: set et ft=cpp ts=4 sts=4 sw=4 fenc=utf-8 :vi
+
 #include "llamafile/version.h"
 #include "llamafile/llamafile.h"
+#include "llama.cpp/cores.h"
 #include "common.h"
+#include "slurp.h"
 
 #include "whisper.h"
 #include "grammar-parser.h"
@@ -25,11 +28,9 @@
 #pragma warning(disable: 4244 4267) // possible loss of data
 #endif
 
-int cpu_get_num_math();
-
 // command-line parameters
 struct whisper_params {
-    int32_t n_threads     = cpu_get_num_math();
+    int32_t n_threads     = std::min(16, cpu_get_num_math());
     int32_t n_processors  = 1;
     int32_t offset_t_ms   = 0;
     int32_t offset_n      = 0;
@@ -1108,8 +1109,8 @@ int main(int argc, char ** argv) {
         std::vector<float> pcmf32;               // mono-channel F32 PCM
         std::vector<std::vector<float>> pcmf32s; // stereo-channel F32 PCM
 
-        if (!::read_wav(fname_inp, pcmf32, pcmf32s, params.diarize)) {
-            fprintf(stderr, "error: failed to read WAV file '%s'\n", fname_inp.c_str());
+        if (!slurp_audio_file(fname_inp.c_str(), pcmf32, pcmf32s, params.diarize)) {
+            fprintf(stderr, "error: failed to read audio file '%s'\n", fname_inp.c_str());
             continue;
         }
 
